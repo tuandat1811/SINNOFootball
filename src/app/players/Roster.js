@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Roster({ currentAdminId }) {
+  const router = useRouter();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null); // { type: "error"|"success", text }
@@ -78,6 +80,45 @@ export default function Roster({ currentAdminId }) {
       setMessage({
         type: "success",
         text: deactivating ? "Player deactivated." : "Player reactivated.",
+      });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function changeRole(p) {
+    const promoting = p.role === "player";
+    const nextRole = promoting ? "admin" : "player";
+    const isSelf = p._id === currentAdminId;
+    const label = p.fullName || p.username;
+    const confirmText = promoting
+      ? `Make ${label} an admin? They'll be able to manage the club.`
+      : isSelf
+        ? `Demote yourself to player? You'll lose admin access immediately.`
+        : `Demote ${label} to player?`;
+    if (!confirm(confirmText)) return;
+
+    setBusyId(p._id);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/players/${p._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: nextRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Update failed.");
+      // Self-demotion revokes admin access — leave the admin-only screen.
+      if (isSelf && nextRole === "player") {
+        router.replace("/");
+        return;
+      }
+      setPlayers((ps) => ps.map((x) => (x._id === p._id ? data.player : x)));
+      setMessage({
+        type: "success",
+        text: promoting ? "Promoted to admin." : "Demoted to player.",
       });
     } catch (err) {
       setMessage({ type: "error", text: err.message });
@@ -225,6 +266,13 @@ export default function Roster({ currentAdminId }) {
                   disabled={busy}
                 >
                   {p.isActive ? "Deactivate" : "Reactivate"}
+                </button>
+                <button
+                  className="btn-secondary"
+                  onClick={() => changeRole(p)}
+                  disabled={busy}
+                >
+                  {p.role === "admin" ? "Demote to player" : "Promote to admin"}
                 </button>
               </div>
             )}

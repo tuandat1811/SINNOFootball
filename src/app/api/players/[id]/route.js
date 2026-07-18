@@ -45,6 +45,29 @@ export async function PATCH(request, { params }) {
       target.isActive = body.isActive;
     }
 
+    // Role change (promote/demote) with the last-admin guard (US-1.6).
+    // Demoting an active admin is blocked if they're the only active admin —
+    // same invariant as deactivation. Self-demotion is fine when another
+    // active admin remains (the count check covers it).
+    if (typeof body.role === "string" && body.role !== target.role) {
+      if (!["admin", "player"].includes(body.role)) {
+        return NextResponse.json({ error: "Invalid role." }, { status: 400 });
+      }
+      if (body.role === "player" && target.role === "admin" && target.isActive) {
+        const activeAdmins = await User.countDocuments({
+          role: "admin",
+          isActive: true,
+        });
+        if (activeAdmins <= 1) {
+          return NextResponse.json(
+            { error: "Cannot demote the last admin." },
+            { status: 400 }
+          );
+        }
+      }
+      target.role = body.role;
+    }
+
     await target.save();
     return NextResponse.json({ player: target.toJSON() });
   } catch (err) {
