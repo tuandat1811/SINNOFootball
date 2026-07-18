@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 import { verifyPassword, setSessionCookie } from "@/lib/auth";
+import { normalizeUsername } from "@/lib/validation";
 
 // POST /api/auth/login — authenticate with username + password (US-1.3).
 export async function POST(request) {
@@ -22,7 +23,7 @@ export async function POST(request) {
     );
   }
 
-  const user = await User.findOne({ username: username.trim() });
+  const user = await User.findOne({ username: normalizeUsername(username) });
 
   // Generic error for both "no user" and "wrong password" (no field-level
   // leakage). Still run a hash comparison shape only when a user exists.

@@ -4,23 +4,20 @@ import User from "@/models/User";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
 import { validateUsername, validatePassword, normalizeUsername } from "@/lib/validation";
 
-// GET /api/setup — is the first-admin setup still available?
-// setupNeeded is true only while zero users exist (US-1.1).
-export async function GET() {
-  await connectDB();
-  const count = await User.estimatedDocumentCount();
-  return NextResponse.json({ setupNeeded: count === 0 });
-}
-
-// POST /api/setup — create the very first admin account.
-// Disabled once any user exists, so this path can't be replayed.
+// POST /api/auth/register — public self-registration (US-1.2).
+// Anyone can create a player account; admin can deactivate unwanted
+// signups afterward (US-1.4). New players are active immediately and
+// are auto-logged-in on success.
 export async function POST(request) {
   await connectDB();
 
-  const existing = await User.estimatedDocumentCount();
-  if (existing > 0) {
+  // A club must already exist (an admin was created via /setup) before
+  // players can self-register — otherwise the first-ever user would be a
+  // player with no admin. Fresh installs are routed to /setup instead.
+  const userCount = await User.estimatedDocumentCount();
+  if (userCount === 0) {
     return NextResponse.json(
-      { error: "Setup has already been completed." },
+      { error: "The club hasn't been set up yet." },
       { status: 409 }
     );
   }
@@ -32,7 +29,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { clubName, fullName, username, password } = body || {};
+  const { fullName, username, password } = body || {};
 
   const usernameError = validateUsername(username);
   if (usernameError) return NextResponse.json({ error: usernameError }, { status: 400 });
@@ -40,16 +37,13 @@ export async function POST(request) {
   const passwordError = validatePassword(password);
   if (passwordError) return NextResponse.json({ error: passwordError }, { status: 400 });
 
-  // Re-check under a race: a unique index still guards username, but the
-  // "zero users" gate isn't transactional on the free tier. If two setup
-  // requests arrive together, the second insert will fail on the index.
   try {
     const passwordHash = await hashPassword(password);
     const user = await User.create({
       username: normalizeUsername(username),
       passwordHash,
-      fullName: (fullName || clubName || username).trim(),
-      role: "admin",
+      fullName: (fullName || username).trim(),
+      role: "player",
       isActive: true,
     });
 
@@ -61,13 +55,14 @@ export async function POST(request) {
 
     return NextResponse.json({ user: user.toJSON() }, { status: 201 });
   } catch (err) {
+    // Unique index on username → collision (US-1.2 edge case).
     if (err?.code === 11000) {
       return NextResponse.json(
         { error: "That username is taken." },
         { status: 409 }
       );
     }
-    console.error("Setup failed:", err);
-    return NextResponse.json({ error: "Setup failed." }, { status: 500 });
+    console.error("Registration failed:", err);
+    return NextResponse.json({ error: "Registration failed." }, { status: 500 });
   }
 }

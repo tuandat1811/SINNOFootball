@@ -4,6 +4,12 @@
 
 export const PASSWORD_MIN_LENGTH = 8;
 
+// Canonical form used for storage + lookup, so usernames are case-insensitive
+// ("Alex" and "alex" are the same account).
+export function normalizeUsername(username) {
+  return String(username ?? "").trim().toLowerCase();
+}
+
 export function validateUsername(username) {
   if (typeof username !== "string") return "Username is required.";
   const u = username.trim();

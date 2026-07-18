@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import User from "@/models/User";
@@ -33,4 +34,15 @@ export async function requireAdmin() {
     throw err;
   }
   return user;
+}
+
+// Converts an error thrown by requireUser/requireAdmin (or anything else) into
+// a JSON response. Route handlers wrap their body in try/catch and call this.
+export function handleApiError(err) {
+  const status = err?.status;
+  if (status === 401 || status === 403) {
+    return NextResponse.json({ error: err.message }, { status });
+  }
+  console.error("API error:", err);
+  return NextResponse.json({ error: "Server error." }, { status: 500 });
 }

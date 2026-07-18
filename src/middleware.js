@@ -8,7 +8,7 @@ import { jwtVerify } from "jose";
 const COOKIE_NAME = "sinno_session";
 
 // Paths reachable without a session.
-const PUBLIC_PATHS = ["/login", "/setup"];
+const PUBLIC_PATHS = ["/login", "/setup", "/register"];
 
 function isPublicPath(pathname) {
   if (PUBLIC_PATHS.includes(pathname)) return true;
@@ -36,8 +36,8 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const loggedIn = await hasValidSession(request);
 
-  // Logged-in users shouldn't see the login/setup screens.
-  if (loggedIn && (pathname === "/login" || pathname === "/setup")) {
+  // Logged-in users shouldn't see the login/register/setup screens.
+  if (loggedIn && PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -45,8 +45,12 @@ export async function middleware(request) {
 
   // Everything else requires a session.
   if (!loggedIn) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    // API clients expect JSON, not an HTML login page. Return 401 so fetch
+    // callers can handle it cleanly instead of following a redirect.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();

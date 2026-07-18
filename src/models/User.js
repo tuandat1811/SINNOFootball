@@ -2,7 +2,10 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    username: { type: String, required: true, unique: true, trim: true },
+    // Stored lowercase so usernames are case-insensitive for uniqueness and
+    // login. Display name lives in `fullName`. Mongoose applies `lowercase`
+    // to both writes and query filters on this path.
+    username: { type: String, required: true, unique: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true },
     fullName: { type: String, trim: true },
     phone: { type: String, trim: true },

@@ -1,13 +1,10 @@
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/currentUser";
+import { requirePageUser } from "@/lib/pageAuth";
 import LogoutButton from "@/components/LogoutButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
+  const user = await requirePageUser();
   const isAdmin = user.role === "admin";
 
   return (
