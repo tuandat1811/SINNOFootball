@@ -67,20 +67,3 @@ src/
    ```
    Open http://localhost:3000. With an empty database you'll be routed to
    `/setup` to create the first admin; after that, `/login`.
-
-## Build order
-
-1. **Epic 1 — Admin & Accounts** (in progress): first-admin setup, login, session,
-   route protection are scaffolded. Remaining: player CRUD, invite links, profile
-   editing, promote/demote.
-2. **Epic 2 — Match Voting**: models are defined; screens/APIs next.
-3. **Epic 3 — Finance/Fund**: models are defined; screens/APIs next.
-
-## Key product decisions (locked)
-
-- Single-tenant (one deploy = one club).
-- No system-enforced voting quorum — admin confirms at their discretion.
-- Passwords: min 8 chars, no complexity rules. Sessions last 30 days.
-- Fund requests target a manually-selected subset of players (no default).
-- Soft-delete everywhere (`isActive` / `status`) to preserve history.
-- Recurring dues are out of MVP scope (revisit with a "duplicate request" action).
