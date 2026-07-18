@@ -7,8 +7,8 @@ const userSchema = new mongoose.Schema(
     // to both writes and query filters on this path.
     username: { type: String, required: true, unique: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true },
-    fullName: { type: String, trim: true },
-    phone: { type: String, trim: true },
+    fullName: { type: String, trim: true, maxlength: [80, "Name is too long (max 80 characters)."] },
+    phone: { type: String, trim: true, maxlength: [30, "Phone is too long (max 30 characters)."] },
     avatarUrl: { type: String },
     avatarPublicId: { type: String }, // Cloudinary id, for replace/delete
     role: {

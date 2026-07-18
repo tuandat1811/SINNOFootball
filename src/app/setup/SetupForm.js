@@ -64,6 +64,7 @@ export default function SetupForm() {
           value={form.fullName}
           onChange={update("fullName")}
           placeholder="Alex Nguyen"
+          maxLength={80}
           required
         />
       </div>

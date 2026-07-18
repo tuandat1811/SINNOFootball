@@ -20,7 +20,12 @@ export default async function HomePage() {
             </span>
           </p>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-2">
+          <Link href="/profile" className="btn-secondary">
+            Profile
+          </Link>
+          <LogoutButton />
+        </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3">

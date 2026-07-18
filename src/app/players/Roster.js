@@ -169,6 +169,7 @@ export default function Roster({ currentAdminId }) {
                     className="input"
                     value={editForm.fullName}
                     onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))}
+                    maxLength={80}
                   />
                 </div>
                 <div>
@@ -177,6 +178,7 @@ export default function Roster({ currentAdminId }) {
                     className="input"
                     value={editForm.phone}
                     onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                    maxLength={30}
                   />
                 </div>
                 <div className="flex gap-2">
