@@ -10,3 +10,10 @@ export async function requirePageUser() {
   if (!user) redirect("/api/auth/logout");
   return user;
 }
+
+// For admin-only pages. Non-admins are sent back to the dashboard.
+export async function requireAdminPage() {
+  const user = await requirePageUser();
+  if (user.role !== "admin") redirect("/");
+  return user;
+}

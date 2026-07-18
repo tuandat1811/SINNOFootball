@@ -43,6 +43,15 @@ export function handleApiError(err) {
   if (status === 401 || status === 403) {
     return NextResponse.json({ error: err.message }, { status });
   }
+  // Malformed ObjectId (e.g. /api/players/garbage) — a bad request, not a fault.
+  if (err?.name === "CastError") {
+    return NextResponse.json({ error: "Invalid id." }, { status: 400 });
+  }
+  // Mongoose schema validation failure — surface the first message.
+  if (err?.name === "ValidationError") {
+    const first = Object.values(err.errors || {})[0]?.message;
+    return NextResponse.json({ error: first || "Validation failed." }, { status: 400 });
+  }
   console.error("API error:", err);
   return NextResponse.json({ error: "Server error." }, { status: 500 });
 }
