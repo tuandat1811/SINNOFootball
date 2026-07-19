@@ -3,11 +3,21 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
+function Avatar({ name }) {
+  const initial = (name || "?").trim().charAt(0).toUpperCase();
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-500">
+      {initial}
+    </div>
+  );
+}
+
 export default function Roster({ currentAdminId }) {
   const router = useRouter();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState(null); // { type: "error"|"success", text }
+  const [query, setQuery] = useState("");
+  const [message, setMessage] = useState(null);
 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ fullName: "", phone: "" });
@@ -110,7 +120,6 @@ export default function Roster({ currentAdminId }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Update failed.");
-      // Self-demotion revokes admin access — leave the admin-only screen.
       if (isSelf && nextRole === "player") {
         router.replace("/");
         return;
@@ -154,131 +163,142 @@ export default function Roster({ currentAdminId }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-gray-500">Loading roster…</p>;
+  const filtered = players.filter((p) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (p.fullName || "").toLowerCase().includes(q) ||
+      (p.username || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
-    <div className="space-y-3">
+    <div>
+      <input
+        className="input mb-4"
+        placeholder="Search players…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
       {message && (
         <p
-          className={`rounded-md px-3 py-2 text-sm ${
+          className={`mb-4 rounded-lg border px-3 py-2 text-sm ${
             message.type === "error"
-              ? "bg-red-50 text-red-700"
-              : "bg-green-50 text-green-700"
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-brand-100 bg-brand-50 text-brand-700"
           }`}
         >
           {message.text}
         </p>
       )}
 
-      {players.map((p) => {
-        const isSelf = p._id === currentAdminId;
-        const busy = busyId === p._id;
-        return (
-          <div key={p._id} className={`card ${!p.isActive ? "opacity-60" : ""}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-gray-900">
-                  {p.fullName || p.username}
-                  {isSelf && <span className="ml-1 text-xs text-gray-400">(you)</span>}
-                </p>
-                <p className="truncate text-sm text-gray-500">@{p.username}</p>
-                {p.phone && <p className="text-sm text-gray-500">{p.phone}</p>}
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    p.role === "admin"
-                      ? "bg-pitch/10 text-pitch-dark"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {p.role === "admin" ? "Admin" : "Player"}
-                </span>
-                {!p.isActive && (
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                    Inactive
-                  </span>
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading roster…</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-gray-500">No players found.</p>
+      ) : (
+        <div className="space-y-2.5">
+          {filtered.map((p) => {
+            const isSelf = p._id === currentAdminId;
+            const busy = busyId === p._id;
+            return (
+              <div key={p._id} className={`card p-4 ${!p.isActive ? "opacity-60" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <Avatar name={p.fullName || p.username} />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-2 font-semibold text-gray-900">
+                      <span className="truncate">{p.fullName || p.username}</span>
+                      {isSelf && <span className="text-xs font-normal text-gray-400">(you)</span>}
+                    </p>
+                    <p className="truncate text-sm text-gray-500">
+                      @{p.username}
+                      {p.phone ? ` · ${p.phone}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className={p.role === "admin" ? "badge-green" : "badge-gray"}>
+                      {p.role === "admin" ? "Admin" : "Player"}
+                    </span>
+                    {!p.isActive && <span className="badge-red">Inactive</span>}
+                  </div>
+                </div>
+
+                {editingId === p._id ? (
+                  <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                    <div>
+                      <label className="label">Name</label>
+                      <input
+                        className="input"
+                        maxLength={80}
+                        value={editForm.fullName}
+                        onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Phone</label>
+                      <input
+                        className="input"
+                        maxLength={30}
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="btn-primary btn-sm" onClick={() => saveEdit(p._id)} disabled={busy}>
+                        {busy ? "Saving…" : "Save"}
+                      </button>
+                      <button className="btn-secondary btn-sm" onClick={() => setEditingId(null)} disabled={busy}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : resettingId === p._id ? (
+                  <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                    <div>
+                      <label className="label">New password for @{p.username}</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={resetPassword}
+                        onChange={(e) => setResetPassword(e.target.value)}
+                        placeholder="At least 8 characters"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="btn-primary btn-sm" onClick={() => submitReset(p._id)} disabled={busy}>
+                        {busy ? "Resetting…" : "Set password"}
+                      </button>
+                      <button className="btn-secondary btn-sm" onClick={() => setResettingId(null)} disabled={busy}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex flex-wrap gap-1 border-t border-gray-100 pt-3">
+                    <button className="btn-ghost btn-sm" onClick={() => startEdit(p)} disabled={busy}>
+                      Edit
+                    </button>
+                    <button className="btn-ghost btn-sm" onClick={() => startReset(p)} disabled={busy}>
+                      Reset password
+                    </button>
+                    <button className="btn-ghost btn-sm" onClick={() => changeRole(p)} disabled={busy}>
+                      {p.role === "admin" ? "Demote" : "Promote"}
+                    </button>
+                    <button
+                      className={p.isActive ? "btn-danger btn-sm" : "btn-ghost btn-sm"}
+                      onClick={() => toggleActive(p)}
+                      disabled={busy}
+                    >
+                      {p.isActive ? "Deactivate" : "Reactivate"}
+                    </button>
+                  </div>
                 )}
               </div>
-            </div>
-
-            {editingId === p._id ? (
-              <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                <div>
-                  <label className="label">Name</label>
-                  <input
-                    className="input"
-                    value={editForm.fullName}
-                    onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))}
-                    maxLength={80}
-                  />
-                </div>
-                <div>
-                  <label className="label">Phone</label>
-                  <input
-                    className="input"
-                    value={editForm.phone}
-                    onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
-                    maxLength={30}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button className="btn-primary" onClick={() => saveEdit(p._id)} disabled={busy}>
-                    {busy ? "Saving…" : "Save"}
-                  </button>
-                  <button className="btn-secondary" onClick={() => setEditingId(null)} disabled={busy}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : resettingId === p._id ? (
-              <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                <div>
-                  <label className="label">New password for @{p.username}</label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button className="btn-primary" onClick={() => submitReset(p._id)} disabled={busy}>
-                    {busy ? "Resetting…" : "Set password"}
-                  </button>
-                  <button className="btn-secondary" onClick={() => setResettingId(null)} disabled={busy}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-gray-100 pt-3">
-                <button className="btn-secondary" onClick={() => startEdit(p)} disabled={busy}>
-                  Edit
-                </button>
-                <button className="btn-secondary" onClick={() => startReset(p)} disabled={busy}>
-                  Reset password
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={() => toggleActive(p)}
-                  disabled={busy}
-                >
-                  {p.isActive ? "Deactivate" : "Reactivate"}
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={() => changeRole(p)}
-                  disabled={busy}
-                >
-                  {p.role === "admin" ? "Demote to player" : "Promote to admin"}
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

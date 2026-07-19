@@ -1,25 +1,22 @@
-import Link from "next/link";
-import { requireAdminPage } from "@/lib/pageAuth";
+import { requireAdminPage, shellUser } from "@/lib/pageAuth";
+import AppShell from "@/components/AppShell";
 import Roster from "./Roster";
 
 export const dynamic = "force-dynamic";
 
-// US-1.4 — admin roster management.
+// US-1.4 / US-1.6 — admin roster management.
 export default async function PlayersPage() {
   const admin = await requireAdminPage();
 
   return (
-    <main className="mx-auto max-w-3xl p-4 sm:p-6">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <Link href="/" className="text-sm text-pitch hover:underline">
-            ← Dashboard
-          </Link>
-          <h1 className="mt-1 text-xl font-bold text-pitch-dark">Roster</h1>
-        </div>
+    <AppShell user={shellUser(admin)}>
+      <header className="mb-5">
+        <h1 className="text-2xl font-bold text-gray-900">Roster</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage players and accounts. New players join via the sign-up page.
+        </p>
       </header>
-
       <Roster currentAdminId={admin._id.toString()} />
-    </main>
+    </AppShell>
   );
 }

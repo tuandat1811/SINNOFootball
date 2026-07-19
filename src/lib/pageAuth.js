@@ -17,3 +17,14 @@ export async function requireAdminPage() {
   if (user.role !== "admin") redirect("/");
   return user;
 }
+
+// Plain, serializable subset safe to pass from a Server Component into a
+// Client Component (Mongoose docs carry toJSON/ObjectId and can't cross that
+// boundary).
+export function shellUser(user) {
+  return {
+    role: user.role,
+    fullName: user.fullName || "",
+    username: user.username,
+  };
+}

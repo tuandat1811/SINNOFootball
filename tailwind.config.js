@@ -7,11 +7,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        pitch: {
-          DEFAULT: "#166534",
-          light: "#22c55e",
-          dark: "#14532d",
+        // Modern, conventional palette: neutral grays + a green brand accent.
+        brand: {
+          50: "#f0fdf4",
+          100: "#dcfce7",
+          600: "#16a34a",
+          700: "#15803d",
+          800: "#166534",
         },
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
     },
   },

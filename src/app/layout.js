@@ -1,4 +1,5 @@
 import "./globals.css";
+import { sans } from "./fonts";
 
 export const metadata = {
   title: "SINNO FC",
@@ -12,15 +13,14 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#166534",
+  themeColor: "#16a34a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={sans.variable}>
       <body>{children}</body>
     </html>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isSetupNeeded } from "@/lib/setup";
+import AuthShell from "@/components/AuthShell";
 import RegisterForm from "./RegisterForm";
 
 export const dynamic = "force-dynamic";
@@ -11,20 +12,19 @@ export default async function RegisterPage() {
   if (await isSetupNeeded()) redirect("/setup");
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <div className="card w-full max-w-md">
-        <h1 className="text-2xl font-bold text-pitch-dark">Join the club</h1>
-        <p className="mt-1 mb-6 text-sm text-gray-600">
-          Create your player account.
-        </p>
-        <RegisterForm />
-        <p className="mt-4 text-center text-sm text-gray-600">
+    <AuthShell
+      title="Join the club"
+      subtitle="Create your player account."
+      footer={
+        <>
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-pitch hover:underline">
+          <Link href="/login" className="font-semibold text-brand-700 hover:underline">
             Sign in
           </Link>
-        </p>
-      </div>
-    </main>
+        </>
+      }
+    >
+      <RegisterForm />
+    </AuthShell>
   );
 }

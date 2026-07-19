@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { requirePageUser } from "@/lib/pageAuth";
+import { requirePageUser, shellUser } from "@/lib/pageAuth";
+import AppShell from "@/components/AppShell";
 import ProfileForm from "./ProfileForm";
 
 export const dynamic = "force-dynamic";
@@ -9,14 +9,11 @@ export default async function ProfilePage() {
   const user = await requirePageUser();
 
   return (
-    <main className="mx-auto max-w-md p-4 sm:p-6">
-      <header className="mb-6">
-        <Link href="/" className="text-sm text-pitch hover:underline">
-          ← Dashboard
-        </Link>
-        <h1 className="mt-1 text-xl font-bold text-pitch-dark">My Profile</h1>
+    <AppShell user={shellUser(user)}>
+      <header className="mb-5">
+        <h1 className="text-2xl font-bold text-gray-900">Profile &amp; settings</h1>
+        <p className="mt-1 text-sm text-gray-500">Manage your account.</p>
       </header>
-
       <ProfileForm
         initial={{
           username: user.username,
@@ -24,6 +21,6 @@ export default async function ProfilePage() {
           phone: user.phone || "",
         }}
       />
-    </main>
+    </AppShell>
   );
 }
